@@ -1,0 +1,55 @@
+name: Zgłoszenie błędu
+description: Zgłoś powtarzalny problem bez ujawniania sekretów lub danych firmowych.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Nie wklejaj haseł Wi-Fi/SMB, tokenów, nazw hostów, danych firmowych ani pełnych capture'ów. Podatności zgłaszaj zgodnie z SECURITY.md.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Opis
+      description: Co się wydarzyło i czego oczekiwałeś?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Wersja lub commit
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Obszar
+      options:
+        - Hotspot / ICS
+        - WFP / izolacja
+        - SMB / udział
+        - Panel / API
+        - Telemetria
+        - Instalacja / odinstalowanie
+        - Inny
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Kroki odtworzenia
+      description: Użyj wyłącznie danych syntetycznych.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Wykonane testy i ograniczenia
+      description: Wymień wynik, VPN/EDR oraz testy oznaczone NOT_RUN.
+  - type: checkboxes
+    id: redaction
+    attributes:
+      label: Redakcja danych
+      options:
+        - label: Usunąłem hasła, tokeny, nazwy hostów/użytkowników i dane firmowe.
+          required: true

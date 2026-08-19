@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{cs,csproj,props,sln}]
+end_of_line = crlf
+
+[*.cs]
+indent_style = space
+indent_size = 4
+dotnet_sort_system_directives_first = true
+csharp_new_line_before_open_brace = all
+
+[*.{json,yml,yaml,md,html,css,js}]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+
+[*.ps1]
+end_of_line = crlf
+indent_style = space
+indent_size = 4
