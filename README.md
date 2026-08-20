@@ -1,8 +1,23 @@
 # WorkRouter for Windows
 
+[![CI](https://github.com/mateuszsury/workrouter-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/mateuszsury/workrouter-windows/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/mateuszsury/workrouter-windows/actions/workflows/codeql.yml/badge.svg)](https://github.com/mateuszsury/workrouter-windows/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/mateuszsury/workrouter-windows?display_name=tag)](https://github.com/mateuszsury/workrouter-windows/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 WorkRouter to lokalna usługa dla Windows 11, która udostępnia połączenie Ethernet przez odseparowany hotspot Wi‑Fi `WORK`. Laptop firmowy dostaje Internet i dostęp do jednego udziału SMB, ale ruch do prywatnych zakresów sieci domowej jest filtrowany przez Windows Filtering Platform (WFP).
 
 To narzędzie administracyjne do kontrolowanego użycia na jednym komputerze. Nie jest zamiennikiem firmowego firewalla, MDM, VPN ani polityki bezpieczeństwa organizacji.
+
+## Zastosowania
+
+- odseparowanie laptopa służbowego od domowego LAN-u przy zachowaniu Internetu i jednego udziału plikowego;
+- kwarantanna oraz obserwacja testowych urządzeń IoT, telefonów i tabletów przed dopuszczeniem ich do zaufanej sieci;
+- analiza lokalnych metadanych kierunków połączeń, DNS, HTTP Host i TLS SNI bez przechwytywania treści;
+- wydzielone środowisko do sprawdzania zachowania urządzeń, firmware'u i aplikacji sieciowych;
+- tymczasowy, kontrolowany segment Wi-Fi dla urządzeń, które mają widzieć siebie nawzajem, lecz nie domowy LAN.
+
+WorkRouter nie jest pełnym IDS/IPS, sandboxem malware ani narzędziem do odszyfrowywania HTTPS. Urządzenie aktywnie podejrzane o infekcję powinno być badane w dedykowanym laboratorium bez dostępu do danych użytkownika.
 
 ## Cel i granice
 
@@ -41,7 +56,7 @@ Usługa nasłuchuje domyślnie wyłącznie na pętli zwrotnej. API wymaga tokenu
 
 - uruchamianie i zatrzymywanie hotspotu z kontrolą stanu;
 - fail‑closed aktywacja: udział SMB, kwarantanna WFP, hotspot, aktywna polityka WFP, a dopiero potem zdjęcie kwarantanny;
-- watchdog, który zatrzymuje router po utracie wymaganej ochrony;
+- watchdog, który najpierw zatrzymuje hotspot po utracie ochrony, a następnie odtwarza go wyłącznie po ponownym potwierdzeniu kompletnej izolacji;
 - konfiguracja SSID, pasma 2,4/5 GHz, limitu klientów i hasła;
 - dedykowany udział SMB `Firmowe` wskazujący na skonfigurowany folder, z osobnym kontem technicznym i ograniczonymi ACL;
 - hasło udziału synchronizowane z hasłem Wi‑Fi; dokumentacja i logi nie zawierają jego wartości;
@@ -95,7 +110,7 @@ Laptop firmowy może mieć VPN, EDR lub politykę blokującą lokalny SMB. WorkR
 
    Skrypt uruchamia testy rozwiązania, publikuje usługę i launcher oraz tworzy `SHA256SUMS.txt`. Przy każdym uruchomieniu odtwarza `artifacts\publish`, więc nie trzymaj tam własnych plików.
 
-   Pakiet z lokalnego builda nie jest podpisany certyfikatem Authenticode. Manifest SHA-256 wykrywa zmianę plików po zbudowaniu, ale nie zastępuje podpisu wydawcy. Publiczne wydanie powinno zostać podpisane przed dystrybucją binariów.
+   Pakiet z lokalnego builda nie jest podpisany certyfikatem Authenticode. Oficjalne wydania mają podpisany tag Git, manifesty SHA-256 i attestację pochodzenia GitHub/Sigstore, które można zweryfikować zgodnie z [RELEASE.md](RELEASE.md). Te mechanizmy nie zastępują Authenticode i granica ta jest jawnie opisana przy każdym wydaniu.
 
 3. Uruchom instalator jako administrator:
 
@@ -171,9 +186,9 @@ Jeśli VPN/EDR blokuje lokalny SMB, nie próbuj tego omijać — traktuj wynik j
 
 Uruchom launcher z menu Start, sprawdź usługę `WorkRouter` w `services.msc` i upewnij się, że plik stanu usługi jest dostępny dla administratora. Nie otwieraj API bez tokenu; odpowiedź `401` oznacza brak sesji, a nie uszkodzenie routera.
 
-### Usługa zatrzymuje router
+### Usługa zatrzymuje lub odtwarza router
 
-To zachowanie fail‑closed. Sprawdź bramki w panelu, zdarzenia, uprawnienia administratora i stan adaptera Wi‑Fi. Nie usuwaj ręcznie filtrów WFP w celu „odblokowania” pracy — najpierw uruchom diagnostykę.
+To zachowanie fail‑closed. Po utracie hotspotu albo filtrów usługa najpierw odcina WORK, usuwa szczątkowy stan i podejmuje pojedyncze pełne odtworzenie. Jeśli ponowna walidacja nie przejdzie, pozostaje w `Faulted` bez pętli restartów. Sprawdź bramki w panelu, zdarzenia, uprawnienia administratora i stan adaptera Wi‑Fi. Nie usuwaj ręcznie filtrów WFP w celu „odblokowania” pracy — najpierw uruchom diagnostykę.
 
 ### Laptop ma Wi‑Fi, ale nie ma Internetu
 
@@ -213,6 +228,18 @@ Deinstalator prosi o potwierdzenie całej operacji, zatrzymuje router przez API,
 - każdą zmianę polityki firmowego laptopa pozostawiamy administratorowi tej organizacji.
 
 Zgłaszanie podatności opisano w [SECURITY.md](SECURITY.md).
+
+## Publiczne materiały projektu
+
+- [Architektura](docs/ARCHITECTURE.md) — komponenty, przepływy i granice zaufania.
+- [Model zagrożeń](docs/THREAT-MODEL.md) — założenia, mitigacje i ryzyka resztkowe.
+- [Prywatność telemetrii](docs/PRIVACY.md) — zakres metadanych i ograniczenia widoczności.
+- [Lokalne API](docs/API.md) — autoryzacja, odczyty i operacje panelu.
+- [Weryfikacja instalacji](docs/INSTALLATION-VERIFICATION.md) — bramki odbioru i testy negatywne.
+- [Proces wydań](docs/RELEASE.md) — build, manifesty hashy i kryteria publikacji.
+- [Łańcuch dostaw wydania](RELEASE.md) — podpis taga, SBOM, attestacje i weryfikacja pobranego ZIP-a.
+- [Roadmapa](docs/ROADMAP.md) — status oraz następne etapy bez obietnic terminów.
+- [Wsparcie](SUPPORT.md), [kodeks postępowania](CODE_OF_CONDUCT.md) i [zasady bezpieczeństwa](SECURITY.md).
 
 ## Status projektu
 

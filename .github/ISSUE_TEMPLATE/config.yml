@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Prywatne zgłoszenie podatności
+    url: https://github.com/mateuszsury/workrouter-windows/security/advisories/new
+    about: Nie publikuj podatności, tokenów ani danych firmowych w zwykłym issue.

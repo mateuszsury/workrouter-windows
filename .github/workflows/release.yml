@@ -1,0 +1,189 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release ref
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$') {
+            throw "Release ref is not a semantic version tag: $tag"
+          }
+          $type = (git cat-file -t "refs/tags/$tag").Trim()
+          if ($type -ne 'tag') {
+            throw "Release tag must be annotated (object type was '$type')."
+          }
+          $ref = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$tag" | ConvertFrom-Json
+          if ($ref.object.type -ne 'tag') {
+            throw "Release ref must point to an annotated tag object."
+          }
+          $tagObject = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($ref.object.sha)" | ConvertFrom-Json
+          if (-not $tagObject.verification.verified) {
+            throw "GitHub did not verify the release tag signature: $($tagObject.verification.reason)"
+          }
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore WorkRouter.sln
+
+      - name: Build and test
+        run: |
+          dotnet build WorkRouter.sln -c Release --no-restore
+          dotnet test WorkRouter.sln -c Release --no-build --logger "trx;LogFileName=workrouter-tests.trx"
+
+      - name: Validate frontend and PowerShell syntax
+        shell: pwsh
+        run: |
+          node --check src/WorkRouter.Service/wwwroot/app.js
+          $tokens = $null
+          $errors = $null
+          Get-ChildItem scripts -Filter '*.ps1' -File | ForEach-Object {
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error "$($_.Extent.File):$($_.Extent.StartLineNumber): $($_.Message)" }
+              throw "PowerShell syntax validation failed for $($_.Name)."
+            }
+            $tokens = $null
+            $errors = $null
+          }
+
+      - name: Publish Windows package
+        shell: pwsh
+        run: ./scripts/build-release.ps1 -Configuration Release
+
+      - name: Verify package and assemble release ZIP
+        id: package
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $package = Join-Path $env:GITHUB_WORKSPACE 'artifacts\publish'
+          ./scripts/verify-release.ps1 -PackagePath $package -ValidateScripts
+          $releaseRoot = Join-Path $env:RUNNER_TEMP "WorkRouter-$tag"
+          if (Test-Path -LiteralPath $releaseRoot) { Remove-Item -LiteralPath $releaseRoot -Recurse -Force }
+          New-Item -ItemType Directory -LiteralPath $releaseRoot | Out-Null
+          Copy-Item -LiteralPath $package -Destination (Join-Path $releaseRoot 'package') -Recurse -Force
+          New-Item -ItemType Directory -LiteralPath (Join-Path $releaseRoot 'scripts') | Out-Null
+          Copy-Item -LiteralPath 'scripts\install.ps1' -Destination (Join-Path $releaseRoot 'scripts\install.ps1')
+          Copy-Item -LiteralPath 'scripts\uninstall.ps1' -Destination (Join-Path $releaseRoot 'scripts\uninstall.ps1')
+          Copy-Item -LiteralPath 'README.md','LICENSE','CHANGELOG.md' -Destination $releaseRoot
+          $zip = Join-Path $env:GITHUB_WORKSPACE "WorkRouter-$tag-win-x64.zip"
+          if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+          Compress-Archive -Path (Join-Path $releaseRoot '*') -DestinationPath $zip -CompressionLevel Optimal
+          $zipHash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToUpperInvariant()
+          $packageChecksums = Join-Path $env:GITHUB_WORKSPACE "WorkRouter-$tag-package-SHA256SUMS.txt"
+          Copy-Item -LiteralPath (Join-Path $package 'SHA256SUMS.txt') -Destination $packageChecksums -Force
+          "zip=$zip" >> $env:GITHUB_OUTPUT
+          "package_checksums=$packageChecksums" >> $env:GITHUB_OUTPUT
+
+      - name: Generate SPDX SBOM
+        id: sbom
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $version = $tag.TrimStart('v')
+          $toolRoot = Join-Path $env:RUNNER_TEMP 'sbom-tool'
+          dotnet tool install Microsoft.Sbom.DotNetTool --tool-path $toolRoot --version 4.1.5
+          $sbomRoot = Join-Path $env:RUNNER_TEMP 'workrouter-sbom'
+          New-Item -ItemType Directory -Path $sbomRoot | Out-Null
+          & (Join-Path $toolRoot 'sbom-tool.exe') generate `
+            -b (Join-Path $env:GITHUB_WORKSPACE 'artifacts\publish') `
+            -bc $env:GITHUB_WORKSPACE `
+            -pn WorkRouter `
+            -pv $version `
+            -ps mateuszsury `
+            -nsb https://github.com/mateuszsury/workrouter-windows `
+            -m $sbomRoot
+          $manifest = @(Get-ChildItem -LiteralPath $sbomRoot -Filter 'manifest.spdx.json' -File -Recurse)
+          if ($manifest.Count -ne 1) { throw "Expected one SPDX manifest, found $($manifest.Count)." }
+          $destination = Join-Path $env:GITHUB_WORKSPACE "WorkRouter-$tag.spdx.json"
+          Copy-Item -LiteralPath $manifest[0].FullName -Destination $destination
+          Get-Content -LiteralPath $destination -Raw | ConvertFrom-Json | Out-Null
+          "path=$destination" >> $env:GITHUB_OUTPUT
+
+      - name: Create release checksums
+        id: checksums
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $assets = @(
+            '${{ steps.package.outputs.zip }}',
+            '${{ steps.sbom.outputs.path }}',
+            '${{ steps.package.outputs.package_checksums }}'
+          )
+          $lines = foreach ($asset in $assets) {
+            $hash = (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToUpperInvariant()
+            "$hash  $([IO.Path]::GetFileName($asset))"
+          }
+          $path = Join-Path $env:GITHUB_WORKSPACE "WorkRouter-$tag-SHA256SUMS.txt"
+          Set-Content -LiteralPath $path -Value $lines -Encoding utf8
+          "path=$path" >> $env:GITHUB_OUTPUT
+
+      - name: Attest release provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            ${{ steps.package.outputs.zip }}
+            ${{ steps.sbom.outputs.path }}
+            ${{ steps.checksums.outputs.path }}
+            ${{ steps.package.outputs.package_checksums }}
+
+      - name: Attest SBOM for release ZIP
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ steps.package.outputs.zip }}
+          sbom-path: ${{ steps.sbom.outputs.path }}
+
+      - name: Publish GitHub release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $zip = '${{ steps.package.outputs.zip }}'
+          $checksums = '${{ steps.checksums.outputs.path }}'
+          $packageChecksums = '${{ steps.package.outputs.package_checksums }}'
+          $sbom = '${{ steps.sbom.outputs.path }}'
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $zip $checksums $packageChecksums $sbom --clobber
+          } else {
+            gh release create $tag $zip $checksums $packageChecksums $sbom --verify-tag --title "WorkRouter $tag" --generate-notes
+          }
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+          retention-days: 7

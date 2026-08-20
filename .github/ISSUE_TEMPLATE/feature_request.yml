@@ -1,0 +1,44 @@
+name: Propozycja funkcji
+description: Zaproponuj zmianę mieszczącą się w modelu bezpieczeństwa WorkRouter.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Opisz potrzebę i oczekiwany efekt. Nie dołączaj haseł, tokenów, nazw hostów ani danych firmowych.
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Zastosowanie
+      description: Jaki realny problem ma rozwiązać ta funkcja?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proponowane zachowanie
+      description: Opisz interfejs użytkownika, stan błędu i bezpieczne wartości domyślne.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Obszar
+      options:
+        - Hotspot / ICS
+        - WFP / izolacja
+        - SMB / udział
+        - Panel / API
+        - Telemetria
+        - Instalacja / wydania
+        - Dokumentacja
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Wpływ na bezpieczeństwo i prywatność
+      description: Wymień nowe uprawnienia, dane, porty, trasy lub ryzyka. Wpisz „brak”, jeśli nie dotyczy.
+    validations:
+      required: true

@@ -16,3 +16,6 @@ Wszystkie istotne zmiany projektu będą dokumentowane w tym pliku. Projekt stos
 - lokalna, ulotna telemetria metadanych DNS i połączeń;
 - instalator, deinstalator, launcher oraz walidacja klienta;
 - testy jednostkowe i automatyczna walidacja CI.
+- bezpieczne samonaprawianie po utracie hotspotu lub filtrów WFP, z zatrzymaniem WORK przed odbudową;
+- podpisane tagi wydań, manifesty SHA-256, SPDX SBOM i attestacje GitHub/Sigstore;
+- CodeQL, przegląd zależności, OpenSSF Scorecard, Dependabot i publiczna dokumentacja bezpieczeństwa.

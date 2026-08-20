@@ -8,7 +8,7 @@ Przed zgłoszeniem sprawdź, czy problem nie wynika z polityki firmowego laptopa
 
 ## Zgłaszanie prywatne
 
-Nie publikuj szczegółów podatności w publicznym issue, pull requeście, zrzucie ekranu ani logu. Po opublikowaniu repozytorium użyj funkcji **GitHub Security Advisories** i utwórz prywatny raport dla maintainerów. Do czasu publikacji repozytorium skontaktuj się z osobą utrzymującą projekt przez uzgodniony prywatny kanał organizacji; ten plik celowo nie zawiera publicznego adresu kontaktowego.
+Nie publikuj szczegółów podatności w publicznym issue, pull requeście, zrzucie ekranu ani logu. Użyj funkcji [GitHub Security Advisories](https://github.com/mateuszsury/workrouter-windows/security/advisories/new) i utwórz prywatny raport dla maintainerów. Ten plik celowo nie zawiera adresu e-mail, aby zgłoszenie, załączniki i dalsza koordynacja pozostały w kontrolowanym kanale repozytorium.
 
 Raport powinien zawierać:
 
