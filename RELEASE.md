@@ -9,7 +9,10 @@ current fingerprint is `SHA256:o/GfOh3vUrpgNQIDlidVjIQvahcynffAHhOJEk5ALcQ`.
 Treat a fingerprint change as a security-sensitive maintenance event.
 
 1. Verifies the tag shape, requires an annotated tag object, and fails unless
-   GitHub reports the SSH/PGP tag signature as `verified`.
+   `git verify-tag` validates the SSH signature against the versioned
+   `.github/allowed_signers` trust file. GitHub may additionally display the
+   signature as `Verified` when the same public key is registered on the
+   maintainer account.
 2. Restores, builds, and tests the complete solution in Release mode.
 3. Validates JavaScript and PowerShell syntax.
 4. Publishes self-contained `win-x64` service and launcher binaries, verifies

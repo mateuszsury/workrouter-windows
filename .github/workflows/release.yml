@@ -38,13 +38,11 @@ jobs:
           if ($type -ne 'tag') {
             throw "Release tag must be annotated (object type was '$type')."
           }
-          $ref = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$tag" | ConvertFrom-Json
-          if ($ref.object.type -ne 'tag') {
-            throw "Release ref must point to an annotated tag object."
-          }
-          $tagObject = gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$($ref.object.sha)" | ConvertFrom-Json
-          if (-not $tagObject.verification.verified) {
-            throw "GitHub did not verify the release tag signature: $($tagObject.verification.reason)"
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile "$env:GITHUB_WORKSPACE/.github/allowed_signers"
+          git verify-tag $tag
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release tag signature does not match .github/allowed_signers."
           }
 
       - name: Setup .NET

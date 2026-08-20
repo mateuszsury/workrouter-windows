@@ -27,7 +27,7 @@ CI wykonuje restore/build/test rozwiązania .NET, `node --check` dla panelu i wa
 - [ ] Instalacja, rollback i odinstalowanie sprawdzone na maszynie testowej.
 - [ ] Windows 11, różne adaptery Wi‑Fi, ICS, WFP, SMB, IPv6 oraz VPN/EDR mają osobne wyniki; nieznane bramki są `NOT_RUN`.
 - [ ] Binariów nie opisano jako podpisanych, jeśli nie ma ważnego Authenticode.
-- [ ] Tag jest podpisany i ma status `Verified` na GitHubie.
+- [ ] Tag jest podpisany i przechodzi `git verify-tag` z `.github/allowed_signers`; status `Verified` na GitHubie jest dodatkową kontrolą konta.
 - [ ] Release zawiera ZIP, dwa manifesty SHA-256 oraz SPDX SBOM.
 - [ ] `gh attestation verify <ZIP> --repo mateuszsury/workrouter-windows` kończy się powodzeniem.
 
