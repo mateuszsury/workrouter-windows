@@ -18,5 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\WorkRouter.Core\WorkRouter.Core.csproj" />
+    <ProjectReference Include="..\..\src\WorkRouter.Service\WorkRouter.Service.csproj" />
   </ItemGroup>
 </Project>

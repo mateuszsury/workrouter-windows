@@ -21,7 +21,7 @@ internal sealed class ServiceSecurityMiddleware
                 return;
             }
 
-            AppendSessionCookie(context.Response, tokens.Token);
+            AppendSessionCookie(context, tokens.Token);
             context.Response.Headers.CacheControl = "no-store";
             context.Response.Redirect("/");
             return;
@@ -37,7 +37,7 @@ internal sealed class ServiceSecurityMiddleware
                 return;
             }
 
-            AppendSessionCookie(context.Response, candidate);
+            AppendSessionCookie(context, candidate);
             context.Response.Headers.CacheControl = "no-store";
             context.Response.StatusCode = StatusCodes.Status204NoContent;
             return;
@@ -65,13 +65,17 @@ internal sealed class ServiceSecurityMiddleware
         await _next(context).ConfigureAwait(false);
     }
 
-    private static void AppendSessionCookie(HttpResponse response, string token) =>
-        response.Cookies.Append(ServiceTokenManager.CookieName, token, new CookieOptions
+    private static void AppendSessionCookie(HttpContext context, string token) =>
+        context.Response.Cookies.Append(ServiceTokenManager.CookieName, token, new CookieOptions
         {
             HttpOnly = true,
             IsEssential = true,
             SameSite = SameSiteMode.Strict,
-            Secure = false,
+            // The service is intentionally HTTP-only on loopback by default;
+            // Secure must follow the actual request scheme or the localhost
+            // panel would never receive its session cookie. HTTPS deployments
+            // still get the Secure attribute, satisfying the transport gate.
+            Secure = context.Request.IsHttps,
             MaxAge = TimeSpan.FromHours(12),
             Path = "/"
         });

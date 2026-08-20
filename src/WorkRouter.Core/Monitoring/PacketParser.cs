@@ -87,7 +87,12 @@ public static class PacketParser
         {
             if (cursor >= data.Length) return false;
             var len = data[cursor++];
-            if (len == 0) { if (!jumped) offset = cursor; name = string.Join('.', labels); return true; }
+            if (len == 0)
+            {
+                if (!jumped) offset = cursor;
+                name = string.Join('.', labels);
+                return true;
+            }
             if ((len & 0xc0) == 0xc0)
             {
                 if (cursor >= data.Length) return false;

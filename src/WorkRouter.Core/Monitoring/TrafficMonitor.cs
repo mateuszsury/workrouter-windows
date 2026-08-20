@@ -222,7 +222,12 @@ public sealed class RawSocketTrafficMonitor : ITrafficMonitor
         lock (_gate)
         {
             Add(_clients, client, bytes, now); Add(_destinations, destination, bytes, now); Add(_protocols, parsed.Protocol, bytes, now); if (domain is not null && DomainRegex.IsMatch(domain)) Add(_domains, domain, bytes, now);
-            if (!_clientDestinations.TryGetValue(client, out var set)) _clientDestinations[client] = set = new(StringComparer.OrdinalIgnoreCase); set.Add(destination); while (set.Count > 512) set.Remove(set.First());
+            if (!_clientDestinations.TryGetValue(client, out var set))
+            {
+                _clientDestinations[client] = set = new(StringComparer.OrdinalIgnoreCase);
+            }
+            set.Add(destination);
+            while (set.Count > 512) set.Remove(set.First());
             var id = ++_nextId; var e = new TrafficEvent(id, now, client, client, direction, parsed.Protocol, $"{parsed.Source}:{parsed.SourcePort}", destination, parsed.SourcePort, parsed.DestinationPort, bytes, domain, host, sni, note, visibility, confidence);
             _events.Enqueue(e); while (_events.Count > MaxEvents) _events.Dequeue();
             if (set.Count == 100) AddAlert(new TrafficAlert(id, now, "info", "many-destinations", client, null, "Klient osiągnął 100 różnych destynacji."));
@@ -296,9 +301,29 @@ public sealed class RawSocketTrafficMonitor : ITrafficMonitor
     }
 
     private void Prune(DateTimeOffset now)
-    { var cutoff = now.AddHours(-_preferences.RetentionHours); while (_events.Count > 0 && _events.Peek().Timestamp < cutoff) _events.Dequeue(); while (_alerts.Count > 0 && _alerts[0].Timestamp < cutoff) _alerts.RemoveAt(0); foreach (var dict in new[] { _clients, _domains, _destinations, _protocols }) while (dict.Count > 1024) dict.Remove(dict.OrderBy(x => x.Value.LastSeen).First().Key); }
-    private void AddAlert(TrafficAlert alert) { if (_alerts.Count >= 256 || _alerts.Any(a => a.Kind == alert.Kind && a.Client == alert.Client && a.Destination == alert.Destination && alert.Timestamp - a.Timestamp < TimeSpan.FromMinutes(1))) return; _alerts.Add(alert); }
-    private static void Add(Dictionary<string, TrafficAggregateMutable> dict, string key, long bytes, DateTimeOffset now) { if (!dict.TryGetValue(key, out var value)) dict[key] = value = new(); value.Bytes += bytes; value.Packets++; value.LastSeen = now; }
+    {
+        var cutoff = now.AddHours(-_preferences.RetentionHours);
+        while (_events.Count > 0 && _events.Peek().Timestamp < cutoff) _events.Dequeue();
+        while (_alerts.Count > 0 && _alerts[0].Timestamp < cutoff) _alerts.RemoveAt(0);
+        foreach (var dict in new[] { _clients, _domains, _destinations, _protocols })
+        {
+            while (dict.Count > 1024) dict.Remove(dict.OrderBy(x => x.Value.LastSeen).First().Key);
+        }
+    }
+
+    private void AddAlert(TrafficAlert alert)
+    {
+        if (_alerts.Count >= 256 || _alerts.Any(a => a.Kind == alert.Kind && a.Client == alert.Client && a.Destination == alert.Destination && alert.Timestamp - a.Timestamp < TimeSpan.FromMinutes(1))) return;
+        _alerts.Add(alert);
+    }
+
+    private static void Add(Dictionary<string, TrafficAggregateMutable> dict, string key, long bytes, DateTimeOffset now)
+    {
+        if (!dict.TryGetValue(key, out var value)) dict[key] = value = new();
+        value.Bytes += bytes;
+        value.Packets++;
+        value.LastSeen = now;
+    }
     private static TrafficAggregate[] SnapshotEvents(IEnumerable<TrafficEvent> events, Func<TrafficEvent, string?> keySelector) => events.Where(e => !string.IsNullOrWhiteSpace(keySelector(e))).GroupBy(e => keySelector(e)!, StringComparer.OrdinalIgnoreCase).Select(g => new TrafficAggregate(g.Key, g.Sum(e => e.Bytes), g.LongCount(), g.Max(e => e.Timestamp))).OrderByDescending(v => v.Bytes).Take(256).ToArray();
     private static bool IsTracker(string domain) => domain.Contains("doubleclick.", StringComparison.OrdinalIgnoreCase) || domain.Contains("googlesyndication.", StringComparison.OrdinalIgnoreCase) || domain.Contains("adservice.", StringComparison.OrdinalIgnoreCase) || domain.Contains("analytics.", StringComparison.OrdinalIgnoreCase);
     private const int WireGuardPort = 51820;

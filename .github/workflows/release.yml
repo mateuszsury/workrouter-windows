@@ -12,9 +12,7 @@ on:
         type: string
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
 
 concurrency:
   group: release-${{ inputs.tag || github.ref }}
@@ -22,6 +20,10 @@ concurrency:
 
 jobs:
   release:
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     runs-on: windows-2025
     timeout-minutes: 45
     steps:
@@ -34,8 +36,6 @@ jobs:
 
       - name: Validate release ref
         shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ inputs.tag || github.ref_name }}'
           $refType = '${{ github.ref_type }}'

@@ -32,3 +32,7 @@ CI wykonuje restore/build/test rozwiązania .NET, `node --check` dla panelu i wa
 - [ ] `gh attestation verify <ZIP> --repo mateuszsury/workrouter-windows` kończy się powodzeniem.
 
 Publiczne artefakty są publikowane na stronie [GitHub Releases](https://github.com/mateuszsury/workrouter-windows/releases) dopiero po przejściu powyższych bramek.
+
+## Granica bezpieczeństwa
+
+Podpis taga, manifesty, SBOM i attestacje potwierdzają pochodzenie oraz integralność artefaktu; nie są certyfikatem bezpieczeństwa aplikacji ani gwarancją braku podatności. Informacje o podatnościach prowadzi się prywatnie według [SECURITY.md](../SECURITY.md), a nie w opisie release. Jeśli którakolwiek bramka nie została wykonana, wydanie musi pozostać oznaczone jako niezweryfikowane lub `NOT_RUN`.

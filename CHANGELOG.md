@@ -5,6 +5,21 @@ Wszystkie istotne zmiany projektu będą dokumentowane w tym pliku. Projekt stos
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-20
+
+### Security
+
+- ograniczono uprawnienia tokenów GitHub Actions do właściwych jobów;
+- cookie sesji panelu otrzymuje flagę `Secure` dla połączeń HTTPS, zachowując
+  działanie lokalnego panelu HTTP na loopback;
+- rozbudowano politykę prywatnego zgłaszania podatności i terminy reakcji.
+
+### Fixed
+
+- usunięto niejednoznaczne formatowanie w parserze pakietów i monitorze ruchu;
+- ręczne ponowienie release nadal wymaga uruchomienia z dokładnego kontekstu
+  podpisanego taga, aby atestacja wskazywała właściwy commit.
+
 ## [0.1.1] - 2026-08-20
 
 ### Fixed

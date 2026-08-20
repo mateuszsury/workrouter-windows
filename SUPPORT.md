@@ -11,7 +11,7 @@ WorkRouter for Windows jest narzędziem lokalnym. Zanim poprosisz o pomoc:
 
 Podaj wersję projektu, wersję Windows, ogólny model adaptera, krok reprodukcji i zanonimizowany komunikat błędu. Nie dołączaj haseł, tokenów, nazw użytkowników/hostów, adresów IP, domen firmowych, plików udziału, pełnych zrzutów sieci ani danych klientów.
 
-Problemy bezpieczeństwa zgłaszaj zgodnie z [SECURITY.md](SECURITY.md), a nie w publicznym issue. Użyj prywatnego kanału GitHub Security Advisories.
+Problemy bezpieczeństwa zgłaszaj zgodnie z [SECURITY.md](SECURITY.md), a nie w publicznym issue. Użyj prywatnego kanału GitHub Security Advisories; terminy reakcji opisane w polityce są celami operacyjnymi, nie umową SLA.
 
 ## Przydatne kontrole lokalne
 
