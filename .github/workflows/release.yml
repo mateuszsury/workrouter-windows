@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing signed release tag to rebuild or publish
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -11,7 +17,7 @@ permissions:
   attestations: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -24,13 +30,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Validate release ref
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$') {
             throw "Release ref is not a semantic version tag: $tag"
           }
@@ -82,14 +89,14 @@ jobs:
         id: package
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           $package = Join-Path $env:GITHUB_WORKSPACE 'artifacts\publish'
           ./scripts/verify-release.ps1 -PackagePath $package -ValidateScripts
           $releaseRoot = Join-Path $env:RUNNER_TEMP "WorkRouter-$tag"
           if (Test-Path -LiteralPath $releaseRoot) { Remove-Item -LiteralPath $releaseRoot -Recurse -Force }
-          New-Item -ItemType Directory -LiteralPath $releaseRoot | Out-Null
+          New-Item -ItemType Directory -Path $releaseRoot | Out-Null
           Copy-Item -LiteralPath $package -Destination (Join-Path $releaseRoot 'package') -Recurse -Force
-          New-Item -ItemType Directory -LiteralPath (Join-Path $releaseRoot 'scripts') | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $releaseRoot 'scripts') | Out-Null
           Copy-Item -LiteralPath 'scripts\install.ps1' -Destination (Join-Path $releaseRoot 'scripts\install.ps1')
           Copy-Item -LiteralPath 'scripts\uninstall.ps1' -Destination (Join-Path $releaseRoot 'scripts\uninstall.ps1')
           Copy-Item -LiteralPath 'README.md','LICENSE','CHANGELOG.md' -Destination $releaseRoot
@@ -106,7 +113,7 @@ jobs:
         id: sbom
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           $version = $tag.TrimStart('v')
           $toolRoot = Join-Path $env:RUNNER_TEMP 'sbom-tool'
           dotnet tool install Microsoft.Sbom.DotNetTool --tool-path $toolRoot --version 4.1.5
@@ -131,7 +138,7 @@ jobs:
         id: checksums
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           $assets = @(
             '${{ steps.package.outputs.zip }}',
             '${{ steps.sbom.outputs.path }}',
@@ -165,7 +172,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           $zip = '${{ steps.package.outputs.zip }}'
           $checksums = '${{ steps.checksums.outputs.path }}'
           $packageChecksums = '${{ steps.package.outputs.package_checksums }}'
