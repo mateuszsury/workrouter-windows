@@ -5,6 +5,14 @@ Wszystkie istotne zmiany projektu będą dokumentowane w tym pliku. Projekt stos
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-20
+
+### Fixed
+
+- poprawiono przenośne tworzenie katalogów pakietu w PowerShell;
+- ponawianie wydania wymaga teraz kontekstu dokładnie tego samego podpisanego taga,
+  dzięki czemu tag, źródła i atestacja pochodzenia wskazują jeden commit.
+
 ## [0.1.0] - 2026-08-20
 
 ### Added

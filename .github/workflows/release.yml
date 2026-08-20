@@ -38,6 +38,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ inputs.tag || github.ref_name }}'
+          $refType = '${{ github.ref_type }}'
+          $refName = '${{ github.ref_name }}'
+          if ($refType -ne 'tag' -or $refName -ne $tag) {
+            throw "Release workflow must run in the exact tag context (tag='$tag', ref='$refType/$refName')."
+          }
           if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$') {
             throw "Release ref is not a semantic version tag: $tag"
           }
