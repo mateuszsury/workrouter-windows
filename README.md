@@ -9,6 +9,21 @@ WorkRouter to lokalna usługa dla Windows 11, która udostępnia połączenie Et
 
 To narzędzie administracyjne do kontrolowanego użycia na jednym komputerze. Nie jest zamiennikiem firmowego firewalla, MDM, VPN ani polityki bezpieczeństwa organizacji.
 
+## Przegląd projektu
+
+A Windows 11 service for a controlled Wi-Fi hotspot, WFP isolation and a scoped SMB share.
+
+![WorkRouter for Windows — Schemat topologii: host Windows realizuje WFP, NAT i udział SMB. Widoczność ruchu ICS wymaga weryfikacji z klientem; nie obiecuje się izolacji klient–klient ani odszyfrowywania HTTPS.](docs/assets/presentation/overview.svg)
+
+Schemat topologii: host Windows realizuje WFP, NAT i udział SMB. Widoczność ruchu ICS wymaga weryfikacji z klientem; nie obiecuje się izolacji klient–klient ani odszyfrowywania HTTPS.
+
+### Podgląd interfejsu
+
+![workrouter-windows interface preview](docs/assets/presentation/interface-preview.png)
+
+Podgląd prawdziwego interfejsu z jawnie oznaczonymi danymi przykładowymi. Nie uruchomiono usługi Windows, WFP, NAT ani testu izolacji sieci.
+
+
 ## Zastosowania
 
 - odseparowanie laptopa służbowego od domowego LAN-u przy zachowaniu Internetu i jednego udziału plikowego;
