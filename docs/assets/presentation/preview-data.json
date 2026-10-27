@@ -1,0 +1,27 @@
+{
+  "status": {
+    "routerRunning": true,
+    "ssid": "WORK",
+    "hotspotAddress": "192.0.2.1",
+    "ethernetOnline": true,
+    "ethernetAddress": "198.51.100.10",
+    "ipv4Filtered": true,
+    "ipv6Blocked": true,
+    "smbReady": true,
+    "sharePath": "\\\\WORK\\Firmowe",
+    "band": "5GHz",
+    "activeBand": "5GHz",
+    "bandConfirmed": true,
+    "maxClients": 8
+  },
+  "clients": [],
+  "events": [],
+  "preferences": {
+    "retentionHours": 24,
+    "autoStartRouter": false,
+    "openPanelAtLogin": true,
+    "trafficInspectionEnabled": false
+  },
+  "traffic/summary": {},
+  "traffic/events": []
+}
